@@ -169,6 +169,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+vaishnavibhavsar03@gmail.com
 
-Project Link: [https://github.com/yourusername/matchbox](https://github.com/yourusername/matchbox) 
+Project Link: [https://github.com/vaishnavibhavsar1510/matchbox](https://github.com/vaishnavibhavsar1510/matchbox) 
