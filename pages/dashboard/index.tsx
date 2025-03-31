@@ -26,30 +26,42 @@ type RsvpStatus = 'going' | 'maybe' | 'not_going';
 
 function EventCard({ event, onRsvp }: { event: Event; onRsvp: (event: Event) => void }) {
   const { userData } = useUser();
-  const userRsvp = userData?.email ? event.rsvps[userData.email] : undefined;
+  const { data: session } = useSession();
+
+  const userRsvp = event.rsvps[session?.user?.email || '']?.status;
+
+  const getButtonStyle = (status: string | undefined) => {
+    switch (status) {
+      case 'going':
+        return 'bg-green-600 text-white';
+      case 'maybe':
+        return 'bg-yellow-600 text-white';
+      case 'not_going':
+        return 'bg-red-600 text-white';
+      default:
+        return 'bg-purple-900/50 text-purple-200 hover:bg-purple-900/70';
+    }
+  };
+
+  const getButtonText = (status: string | undefined) => {
+    switch (status) {
+      case 'going':
+        return 'Going';
+      case 'maybe':
+        return 'Maybe';
+      case 'not_going':
+        return 'Not Going';
+      default:
+        return 'RSVP';
+    }
+  };
 
   return (
-    <div className="bg-[#1E1B2E] rounded-lg shadow-lg p-6 border border-purple-900/20 hover:border-purple-700/30 transition-colors duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-semibold text-white mb-2">{event.title}</h3>
-          <p className="text-purple-200/70 text-sm mb-4">{event.description}</p>
-        </div>
-        <div className="flex-shrink-0 ml-4">
-          {event.createdBy.profileImage ? (
-            <div className="relative w-10 h-10">
-              <Image
-                src={event.createdBy.profileImage}
-                alt={event.createdBy.name}
-                fill
-                className="rounded-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-center text-white text-lg font-medium">
-              {event.createdBy.name.charAt(0)}
-            </div>
-          )}
+    <div className="bg-[#2A2640] rounded-lg p-4 border border-purple-900/20 hover:border-purple-600/40 transition-all duration-300">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-1">{event.title}</h3>
+          <p className="text-purple-200/70 text-sm line-clamp-2">{event.description}</p>
         </div>
       </div>
 
@@ -69,56 +81,18 @@ function EventCard({ event, onRsvp }: { event: Event; onRsvp: (event: Event) => 
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex -space-x-2">
-          {Object.values(event.rsvps)
-            .filter(rsvp => rsvp.status === 'going')
-            .slice(0, 3)
-            .map((rsvp, index) => (
-              <div key={index} className="relative">
-                {rsvp.user.profileImage ? (
-                  <div className="relative w-8 h-8">
-                    <Image
-                      src={rsvp.user.profileImage}
-                      alt={rsvp.user.name}
-                      fill
-                      className="rounded-full border-2 border-[#1E1B2E] object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-center text-white text-sm font-medium border-2 border-[#1E1B2E]">
-                    {rsvp.user.name.charAt(0)}
-                  </div>
-                )}
-              </div>
-            ))}
-          {Object.values(event.rsvps).filter(rsvp => rsvp.status === 'going').length > 3 && (
-            <div className="w-8 h-8 rounded-full bg-purple-900/40 flex items-center justify-center text-purple-200 text-sm border-2 border-[#1E1B2E]">
-              +{Object.values(event.rsvps).filter(rsvp => rsvp.status === 'going').length - 3}
-            </div>
-          )}
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-purple-200/70">
+          <span>{Object.values(event.rsvps).filter(r => r.status === 'going').length} attending</span>
         </div>
-
-        <button
-          onClick={() => onRsvp(event)}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-            userRsvp?.status === 'going'
-              ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
-              : userRsvp?.status === 'maybe'
-              ? 'bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30'
-              : userRsvp?.status === 'not_going'
-              ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
-              : 'bg-purple-900/20 text-purple-300 hover:bg-purple-900/30'
-          }`}
-        >
-          {userRsvp?.status === 'going'
-            ? 'Going'
-            : userRsvp?.status === 'maybe'
-            ? 'Maybe'
-            : userRsvp?.status === 'not_going'
-            ? 'Not Going'
-            : 'RSVP'}
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onRsvp(event)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${getButtonStyle(userRsvp)}`}
+          >
+            {getButtonText(userRsvp)}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -195,6 +169,26 @@ export default function Dashboard() {
 
     try {
       await updateRSVP(selectedEvent._id, details.status, details.notes);
+      
+      // Update the local events state to reflect the new RSVP status
+      const updatedEvents = events.map(event => {
+        if (event._id === selectedEvent._id && session?.user?.email) {
+          return {
+            ...event,
+            rsvps: {
+              ...event.rsvps,
+              [session.user.email]: {
+                status: details.status,
+                notes: details.notes || '',
+                updatedAt: new Date().toISOString()
+              }
+            }
+          };
+        }
+        return event;
+      });
+      
+      // Close the modal
       setIsRsvpModalOpen(false);
       setSelectedEvent(null);
     } catch (error) {
@@ -394,7 +388,7 @@ export default function Dashboard() {
                   </div>
                 ) : eventsError ? (
                   <div className="text-center py-8 text-red-400">
-                    <p>Error loading events: {eventsError}</p>
+                    <p>{eventsError}</p>
                   </div>
                 ) : events.length === 0 ? (
                   <div className="text-center py-8 text-purple-200/70">

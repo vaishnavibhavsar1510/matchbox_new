@@ -21,7 +21,7 @@
     @apply bg-aurora-blue text-white hover:bg-opacity-90;
   }
   .btn-secondary {
-    @apply bg-aurora-teal text-aurora-dark hover:bg-opacity-90;
+    @apply bg-aurora-teal text-white hover:bg-opacity-90;
   }
   .btn-accent {
     @apply bg-aurora-orange text-white hover:bg-opacity-90;
@@ -47,7 +47,7 @@
   left: 0;
   right: 0;
   height: 200px;
-  background: linear-gradient(180deg, #3D5A80 0%, #98C1D9 100%);
+  background: linear-gradient(180deg, #6B46C1 0%, #9F7AEA 100%);
   overflow: hidden;
   z-index: -1;
 }
@@ -56,7 +56,7 @@
 .aurora-waves::after {
   content: '';
   position: absolute;
-  background: rgba(224, 251, 252, 0.4);
+  background: rgba(250, 245, 255, 0.4);
   border-radius: 50% 50%;
   width: 300px;
   height: 300px;

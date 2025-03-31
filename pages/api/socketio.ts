@@ -18,14 +18,27 @@ export default async function handler(
     // adapt Next's net Server to http Server
     const httpServer: NetServer = res.socket.server as any;
     const io = new ServerIO(httpServer, {
-      path: '/api/socketio',
+      path: '/socket.io',
       addTrailingSlash: false,
+      cors: {
+        origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+      },
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      transports: ['websocket', 'polling'],
+      allowEIO3: true
     });
     // append SocketIO server to Next.js socket server response
     res.socket.server.io = io;
 
     io.on('connection', (socket) => {
       console.log('Socket connected:', socket.id);
+
+      socket.on('error', (error) => {
+        console.error('Socket error:', error);
+      });
 
       socket.on('rsvpUpdated', (data) => {
         // Broadcast the update to all connected clients except sender

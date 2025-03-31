@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import clientPromise from '@/lib/mongodb';
-import { verifyToken } from '@/lib/auth';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!['GET', 'POST'].includes(req.method || '')) {
@@ -8,16 +9,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const user = await verifyToken(token);
-    
-    if (!user?.email) {
+    // Verify authentication using NextAuth session
+    const session = await getServerSession(req, res, authOptions);
+    if (!session?.user?.email) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -65,7 +59,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         location,
         maxAttendees: parseInt(maxParticipants),
         maxParticipants: parseInt(maxParticipants), // Keep for backward compatibility
-        createdBy: user.email,
+        createdBy: {
+          email: session.user.email,
+          name: session.user.name || '',
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         rsvps: {},

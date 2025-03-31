@@ -8,11 +8,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'aurora-blue': '#3D5A80',
-        'aurora-teal': '#98C1D9',
-        'aurora-light': '#E0FBFC',
-        'aurora-orange': '#EE6C4D',
-        'aurora-dark': '#293241',
+        'aurora-blue': '#6B46C1',
+        'aurora-teal': '#9F7AEA',
+        'aurora-light': '#FAF5FF',
+        'aurora-orange': '#805AD5',
+        'aurora-dark': '#44337A',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],

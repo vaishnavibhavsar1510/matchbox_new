@@ -6,6 +6,7 @@ export interface UserData {
   email: string;
   name: string;
   birthdate: string;
+  gender: string;
   interests: string[];
   personality: string;
   activityLevel: string;
@@ -14,6 +15,17 @@ export interface UserData {
   location: string;
   bio: string;
   profileImage?: string;
+  // Preference fields
+  looking_for?: string;
+  age_range?: {
+    min: number;
+    max: number;
+  };
+  location_preference?: string;
+  must_haves?: string[];
+  dealbreakers?: string[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface UserContextType {
@@ -50,7 +62,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch user data');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch user data');
         }
 
         const data = await response.json();
@@ -70,11 +83,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserData = async (data: Partial<UserData>) => {
     if (!session?.user?.email) {
+      console.error('No session found when trying to update user data');
       throw new Error('Not authenticated');
     }
 
     try {
       setIsLoading(true);
+      console.log('Sending update request with data:', data);
+      
       const response = await fetch('/api/user', {
         method: 'PUT',
         headers: {
@@ -83,14 +99,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(data),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to update user data');
+        console.error('Server responded with error:', responseData);
+        throw new Error(responseData.error || 'Failed to update user data');
       }
 
-      const updatedData = await response.json();
-      setUserData(updatedData);
+      console.log('Successfully received updated user data:', responseData);
+      setUserData(responseData);
       setError(null);
+      return responseData;
     } catch (err) {
+      console.error('Error in updateUserData:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update user data';
       setError(errorMessage);
       throw new Error(errorMessage);

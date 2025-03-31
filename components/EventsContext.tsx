@@ -23,8 +23,21 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
+    const socket = io(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
     setSocket(socket);
+
+    socket.on('connect', () => {
+      console.log('Socket connected successfully');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
 
     socket.on('eventUpdated', (updatedEvent: Event) => {
       setEvents(prevEvents => 
@@ -48,6 +61,7 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
       }
       const data = await response.json();
       setEvents(data);
+      setError(null);
     } catch (err) {
       console.error('Error fetching events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
@@ -76,11 +90,37 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to update RSVP');
       }
 
-      // Refresh events to get the updated state
-      await refreshEvents();
+      // Update the local state immediately
+      setEvents(prevEvents => 
+        prevEvents.map(event => {
+          if (event._id === eventId && session?.user?.email) {
+            return {
+              ...event,
+              rsvps: {
+                ...event.rsvps,
+                [session.user.email]: {
+                  status,
+                  notes: notes || '',
+                  user: {
+                    _id: session.user.email,
+                    name: session.user.name || '',
+                    email: session.user.email,
+                    profileImage: session.user.image || undefined
+                  },
+                  updatedAt: new Date().toISOString()
+                }
+              }
+            };
+          }
+          return event;
+        })
+      );
+
+      setError(null);
     } catch (err) {
       console.error('Error updating RSVP:', err);
       setError(err instanceof Error ? err.message : 'Failed to update RSVP');
+      throw err;
     }
   };
 

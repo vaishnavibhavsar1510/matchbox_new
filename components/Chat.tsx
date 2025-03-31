@@ -34,13 +34,24 @@ export const Chat: React.FC<ChatProps> = ({ recipient, onClose, isFloating = tru
     if (!session?.user?.email) return;
 
     // Initialize socket connection
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
-      path: '/api/socket',
+    const newSocket = io(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000', {
+      path: '/socket.io',
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
       auth: {
         token: session?.user?.email
       }
     });
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Chat socket connected successfully');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Chat socket connection error:', error);
+    });
 
     // Load existing messages
     const loadMessages = async () => {
